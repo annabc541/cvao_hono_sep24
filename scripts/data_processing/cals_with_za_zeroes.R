@@ -52,7 +52,7 @@ slope_cal0_2 = summary(model_cal2)$coefficients[2,1]
 liquid_flow1 = 5/27.73 
 liquid_flow2 = 5/29.73
 
-gas_flow = 1198
+gas_flow = 1190
 sampling_efficiency1 = 1 - exp(-7768.943*1/gas_flow-0.116560784)
 
 conc_cal = 1000/100000 #standard conc / dilution factor
@@ -172,11 +172,12 @@ dat %>%
        y = "HONO (ppt)",
        col = NULL) +
   theme(legend.position = "top")+
+  scale_x_datetime(date_breaks = "1 day",date_labels = "%d %b") +
   # facet_grid(rows = vars(name),scales = "free") +
   NULL
 
-ggsave('initial_hono_night_ZA_timeseries.png',
-       path = "C:/Users/anna_/Documents/Cape Verde/cvao_hono_sep24",
-       width = 30,
-       height = 12,
-       units = 'cm')
+# ggsave('initial_hono_night_ZA_timeseries.png',
+#        path = "output/analysis_plots",
+#        width = 30,
+#        height = 12,
+#        units = 'cm')

@@ -52,7 +52,7 @@ slope_cal0_2 = summary(model_cal2)$coefficients[2,1]
 liquid_flow1 = 5/27.73 
 liquid_flow2 = 5/29.73
 
-gas_flow = 1180
+gas_flow = 1190
 sampling_efficiency1 = 1 - exp(-7768.943*1/gas_flow-0.116560784)
 
 conc_cal = 1000/100000 #standard conc / dilution factor
@@ -87,7 +87,7 @@ slope_cal2 = summary(model_cal2)$coefficients[2,1]
 # Calibration 2-------------------------------------------------------------
 
 #cal parameters
-gas_flow = 1180
+gas_flow = 1350
 sampling_efficiency2 = 1 - exp(-7768.943*1/gas_flow-0.116560784)
 
 liquid_flow1 = 5/27.73 
@@ -153,7 +153,7 @@ hono_hourly_night = dat_night %>%
   select(date,hono_night) %>% 
   timeAverage("1 hour")
 
-dat = left_join(hono_hourly_za,hono_hourly_night)
+dat = left_join(hono_hourly_night,hono_hourly_za)
 
 dat %>%
   # mutate(day = day(date)) %>% 
@@ -172,11 +172,57 @@ dat %>%
        y = "HONO (ppt)",
        col = NULL) +
   theme(legend.position = "top")+
+  scale_x_datetime(date_breaks = "1 day",date_labels = "%d %b") +
   # facet_grid(rows = vars(name),scales = "free") +
   NULL
-# 
+
 # ggsave('initial_hono_night_ZA_timeseries.png',
-#        path = "C:/Users/anna_/Documents/Cape Verde/cvao_hono_sep24",
+#        path = "output/analysis_plots",
+#        width = 30,
+#        height = 12,
+#        units = 'cm')
+
+# Testing different gas flows and their effect ----------------------------
+
+#for seeing how different gas flows affect data
+#will need to change the gas flows for the calibrated data above for this
+dat_night = bind_rows(dat_calibrated0,dat_calibrated1,dat_calibrated2) %>% 
+  arrange(date) %>% 
+  mutate(hono1640 = ifelse(flag == 0,hono,NA_real_))
+
+hono_hourly1640 = dat_night %>% 
+  select(date,hono1640) %>% 
+  timeAverage("1 hour")
+
+dat = left_join(hono_hourly890,hono_hourly1640)
+
+dat %>%
+  filter(date > "2024-09-07 16:15") %>% 
+  # mutate(day = day(date)) %>% 
+  # mutate(ch1_ppt = ifelse(flag == 0,ch1_ppt,NA_real_),
+  #        ch2_ppt = ifelse(flag == 0,ch2_ppt,NA_real_)) %>% 
+  # timeAverage("1 hour") %>%
+  # filter(day == 12) %>%
+  # filter(date > "2024-09-15 07:45" & date < "2024-09-15 08:30") %>%
+  # rename("Night zeroing" = hono_night,
+  #        "ZA zeroing" = hono_za) %>% 
+  rename(`1640` = hono1640,
+         `890` = hono890) %>% 
+  pivot_longer(c(`890`,`1640`)) %>%
+  ggplot(aes(date,value,col = factor(name),linetype = factor(name))) +
+  theme_bw() +
+  geom_path(size = 1) +
+  labs(x = NULL,
+       y = "HONO (ppt)",
+       col = "Gas flow (mL/min)",
+       linetype = "Gas flow (mL/min)") +
+  theme(legend.position = "top")+
+  scale_x_datetime(date_breaks = "1 day",date_labels = "%d %b") +
+  # facet_grid(rows = vars(name),scales = "free") +
+  NULL
+
+# ggsave('different_gas_flows.png',
+#        path = "output/analysis_plots",
 #        width = 30,
 #        height = 12,
 #        units = 'cm')

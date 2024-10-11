@@ -207,6 +207,8 @@ night_zeroed = night_flag %>%
   fill(ch1_zeroes_inter1,ch2_zeroes_inter1,.direction = "up") %>%
   mutate(ch1_zeroed = ifelse(date < "2024-09-16",ch1 - ch1_zeroes_inter1,ch1 - ch1_zeroes_inter2),
          ch2_zeroed = ifelse(date < "2024-09-16",ch2 - ch2_zeroes_inter1,ch2 - ch2_zeroes_inter2))
+  # rename(ch1_zeroes_night = ch1_zeroes,
+  #        ch2_zeroes_night = ch2_zeroes)
 
 night_zeroed %>% 
   pivot_longer(c(ch2_zeroes_inter1,ch2_zeroes_inter2)) %>% 
