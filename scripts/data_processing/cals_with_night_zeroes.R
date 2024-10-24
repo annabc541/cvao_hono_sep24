@@ -1,5 +1,7 @@
 #night zeroing
 
+time_corr = 22.52 * 60
+
 # Calibration 0 -----------------------------------------------------------
 
 #date > "2024-09-09 14:53" & date < "2024-09-09 15:05" zero for first cal
@@ -129,25 +131,37 @@ dat_calibrated0 = night_zeroed %>%
   # select(-c(night_zero,id,idx)) %>%
   mutate(ch1_ppt = ch1_zeroed * slope_cal0_1,
          ch2_ppt = ch2_zeroed * slope_cal0_2,
-         hono = ppt(ch1_ppt,ch2_ppt,sampling_efficiency0))
+         hono = ppt(ch1_ppt,ch2_ppt,sampling_efficiency0),
+         date1 = date,
+         date = date - time_corr)
 
 dat_calibrated1 = night_zeroed %>% 
   filter(date > "2024-09-11" & date < "2024-09-14 08:17") %>%
   # select(-c(night_zero,id,idx)) %>% 
   mutate(ch1_ppt = ch1_zeroed * slope_cal1,
          ch2_ppt = ch2_zeroed * slope_cal2,
-         hono = ppt(ch1_ppt,ch2_ppt,sampling_efficiency1))
+         hono = ppt(ch1_ppt,ch2_ppt,sampling_efficiency1),
+         date1 = date,
+         date = date - time_corr)
 
 dat_calibrated2 = night_zeroed %>% 
   filter(date > "2024-09-14 08:17") %>%
   # select(-c(night_zero,id,idx)) %>% 
   mutate(ch1_ppt = ch1_zeroed * slope_cal2_1,
          ch2_ppt = ch2_zeroed * slope_cal2_2,
-         hono = ppt(ch1_ppt,ch2_ppt,sampling_efficiency2))
+         hono = ppt(ch1_ppt,ch2_ppt,sampling_efficiency2),
+         date1 = date,
+         date = date - time_corr)
 
 dat_night = bind_rows(dat_calibrated0,dat_calibrated1,dat_calibrated2) %>% 
   arrange(date) %>% 
   mutate(hono_night = ifelse(flag == 0,hono,NA_real_))
+
+dat_night %>% 
+  pivot_longer(c(date,date1)) %>% 
+  timeAverage("1 hour") %>% 
+  ggplot(aes(date,hono_night)) +
+  geom_path()
 
 hono_hourly_night = dat_night %>% 
   select(date,hono_night) %>% 
