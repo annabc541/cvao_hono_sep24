@@ -154,41 +154,56 @@ dat_calibrated2 = night_zeroed %>%
          date = date - time_corr)
 
 dat_night = bind_rows(dat_calibrated0,dat_calibrated1,dat_calibrated2) %>% 
+  select(-date1) %>% 
   arrange(date) %>% 
+  timeAverage("30 sec") %>%
   mutate(hono_night = ifelse(flag == 0,hono,NA_real_))
 
-dat_night %>% 
-  pivot_longer(c(date,date1)) %>% 
-  timeAverage("1 hour") %>% 
-  ggplot(aes(date,hono_night)) +
+processed_hono_night %>% 
+  # timeAverage("1 hour") %>% 
+  ggplot(aes(date,hono_ppt)) +
+  geom_path() +
+  # facet_grid(rows = vars(name)) +
+  NULL
+
+processed_hono_night = dat_night %>% 
+  select(date,hono_ppt = hono_night)
+
+# write.csv(processed_hono_night,file = "output/processed_data/processed_hono_night_zeroes.csv",row.names = F)
+
+hono_hourly_night = processed_hono_night %>% 
+  timeAverage("1 hour")
+
+hono_hourly_night %>% 
+  ggplot(aes(date,hono_ppt)) +
   geom_path()
 
-hono_hourly_night = dat_night %>% 
-  select(date,hono_night) %>% 
-  timeAverage("1 hour")
+# write.csv(hono_hourly_night,file = "output/processed_data/hourly_hono_night_zeroes.csv",row.names = F)
+
+# Compare with zero air ---------------------------------------------------
 
 dat = left_join(hono_hourly_night,hono_hourly_za)
 
-dat %>%
-  # mutate(day = day(date)) %>% 
-  # mutate(ch1_ppt = ifelse(flag == 0,ch1_ppt,NA_real_),
-  #        ch2_ppt = ifelse(flag == 0,ch2_ppt,NA_real_)) %>% 
-  # timeAverage("1 hour") %>%
-  # filter(day == 12) %>%
-  # filter(date > "2024-09-15 07:45" & date < "2024-09-15 08:30") %>%
-  rename("Night zeroing" = hono_night,
-         "ZA zeroing" = hono_za) %>% 
-  pivot_longer(c("Night zeroing","ZA zeroing")) %>%
-  ggplot(aes(date,value,col = name)) +
-  theme_bw() +
-  geom_path(size = 1) +
-  labs(x = NULL,
-       y = "HONO (ppt)",
-       col = NULL) +
-  theme(legend.position = "top")+
-  scale_x_datetime(date_breaks = "1 day",date_labels = "%d %b") +
-  # facet_grid(rows = vars(name),scales = "free") +
-  NULL
+# dat %>%
+#   # mutate(day = day(date)) %>% 
+#   # mutate(ch1_ppt = ifelse(flag == 0,ch1_ppt,NA_real_),
+#   #        ch2_ppt = ifelse(flag == 0,ch2_ppt,NA_real_)) %>% 
+#   # timeAverage("1 hour") %>%
+#   # filter(day == 12) %>%
+#   # filter(date > "2024-09-15 07:45" & date < "2024-09-15 08:30") %>%
+#   rename("Night zeroing" = hono_night,
+#          "ZA zeroing" = hono_za) %>% 
+#   pivot_longer(c("Night zeroing","ZA zeroing")) %>%
+#   ggplot(aes(date,value,col = name)) +
+#   theme_bw() +
+#   geom_path(size = 1) +
+#   labs(x = NULL,
+#        y = "HONO (ppt)",
+#        col = NULL) +
+#   theme(legend.position = "top")+
+#   scale_x_datetime(date_breaks = "1 day",date_labels = "%d %b") +
+#   # facet_grid(rows = vars(name),scales = "free") +
+#   NULL
 
 # ggsave('initial_hono_night_ZA_timeseries.png',
 #        path = "output/analysis_plots",
