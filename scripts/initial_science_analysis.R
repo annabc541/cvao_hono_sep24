@@ -41,9 +41,11 @@ cvao_merge = read.csv("data/20240507_CV_merge.csv") %>%
          date = round_date(date,"1 hour")) %>% 
   clean_names() %>% 
   filter(date > "2023-01-01") %>% 
+  mutate(jhono = ifelse(is.na(j_hono) == T,jhono_calc,j_hono),
+         jhno3 = ifelse(is.na(j_hno3) == T,jhno3_calc,j_hno3)) %>% 
   select(date,ws,wd,temp = temp_10m_deg_c,rh = rh_10m,
          o3_ppb = o3_ppb_v,co_ppb = co_ppb_v,co2_ppm = co2_revised_ppm_v,
-         jhono = j_hono,jhno3 = j_hno3)
+         jhono,jhno3)
 
 air_masses = read.csv("data/new_CVAO_sector_%_boxes_1.csv") %>% 
   mutate(date = ymd_hms(X)) %>% 
@@ -56,9 +58,42 @@ nitrate_ml = read.csv("data/CVAO_Nitrate_Prediction_2024.csv") %>%
   select(date,nitrate) %>% 
   filter(date >= "2024-09-01" & date < "2024-10-01")
 
+# Spec rad ----------------------------------------------------------------
+
+#fill NAs with averages from hours where spec rad data is missing when reading data in
+#should only be used for nighttime values, since calculated spec rad values are only for daytime
+#missing daytime values should be replaced by calculated values
+spec_rad_to_fix = cvao_merge %>% 
+  select(date,jhono,jhno3) %>% 
+  mutate(hour = hour(date))
+
+#find average j-values for each hour
+spec_rad_mean = spec_rad_to_fix %>% 
+  group_by(hour) %>% 
+  summarise(jhono_avg = mean(jhono,na.rm = T),
+            jhno3_avg = mean(jhno3,na.rm = T))
+
+#replace NAs with average value for that hour
+spec_rad = left_join(spec_rad_to_fix,spec_rad_mean,by = "hour") %>% 
+  mutate(jhono = ifelse(is.na(jhono),jhono_avg,jhono),
+         jhno3 = ifelse(is.na(jhno3),jhno3_avg,jhno3)) %>% 
+  select(-c(jhono_avg,jhno3_avg,hour)) %>%
+  arrange(date)
+
+cvao_merge_fixed_spec_rad %>% 
+  filter(date > "2024-09-01" & date < "2024-09-30") %>% 
+  pivot_longer(c(jhono,jhno3)) %>%
+  ggplot(aes(date,value,col = name)) +
+  geom_path() +
+  facet_grid(rows = vars(name),scales = "free")
+
+cvao_merge_fixed_spec_rad = cvao_merge %>% 
+  select(-c(jhono,jhno3)) %>% 
+  left_join(spec_rad)
+
 # Merging data & timeseries plot ------------------------------------------------------------
 
-df_list = list(nox_hourly,hono_hourly,cvao_merge,air_masses)
+df_list = list(nox_hourly,hono_hourly,cvao_merge_fixed_spec_rad,air_masses)
 
 dat_5min = df_list %>% reduce(left_join,by = "date")
 dat_hourly = df_list %>% reduce(left_join,by = "date") %>% 
@@ -154,12 +189,12 @@ hourly_pss_without_nitrate = dat_hourly %>%
          loss = (jhono + (kl*oh_molecules_cm3) + kdep) * ppt_to_molecules_cm3(hono_ppt),
          hono_without_nitrate = molecules_cm3_to_ppt((production_without_nitrate) / (jhono + (kl*oh_molecules_cm3) + kdep)))
 
-hourly_pss %>% 
+hourly_pss_without_nitrate %>% 
   rename("Measured HONO" = hono_ppt,
          "Measured NO" = no_ppt,
          "PSS HONO (without nitrate)" = hono_without_nitrate) %>% 
   pivot_longer(c("Measured HONO","Measured NO","PSS HONO (without nitrate)")) %>%
-  filter(date > "2024-09-11" & date < "2024-09-13") %>% 
+  # filter(date > "2024-09-11" & date < "2024-09-13") %>% 
   ggplot(aes(date,value,col = name)) +
   theme_bw() +
   geom_path(size = 1) +
@@ -168,13 +203,14 @@ hourly_pss %>%
        col = NULL) +
   theme(legend.position = "top") +
   scale_colour_manual(values = c("steelblue1","navy","darkorange")) +
-  scale_x_datetime(date_breaks = "4 hours",date_labels = "%b %d %H:%M")
+  # scale_x_datetime(date_breaks = "4 hours",date_labels = "%b %d %H:%M") +
+  NULL
 
-# ggsave('hono_no_pss_wo_nitrate_pollution.png',
-#        path = "output/science_plots",
-#        width = 30,
-#        height = 12,
-#        units = 'cm')
+ggsave('hono_no_pss_wo_nitrate.png',
+       path = "output/science_plots/pss_ml_nitrate",
+       width = 30,
+       height = 12,
+       units = 'cm')
 
 
 # PSS with nitrate (ML) ---------------------------------------------------
@@ -183,8 +219,7 @@ dat_hourly_nitrate = dat_hourly %>%
   left_join(nitrate_ml) %>% 
   fill(nitrate) %>% 
   mutate(nitrate_molecules_cm3 = (nitrate * 10^-12 *6.022 * 10^23)/62.004,
-         nitrate_nmol_m3 = (nitrate_molecules_cm3 * 10^15)/(6.022*10^23),)
-  
+         nitrate_nmol_m3 = (nitrate_molecules_cm3 * 10^15)/(6.022*10^23))
 
 hourly_pss = dat_hourly_nitrate %>%
   left_join(nitrate_ml) %>% 
@@ -236,8 +271,8 @@ daily_pss %>%
   ylim(-1,45) +
   NULL
 
-ggsave('hono_pss_with_and_withou_nitrate.png',
-       path = "output/science_plots",
-       width = 30,
-       height = 12,
-       units = 'cm')
+# ggsave('hono_pss_with_and_without_nitrate.png',
+#        path = "output/science_plots/pss_ml_nitrate",
+#        width = 30,
+#        height = 12,
+#        units = 'cm')
