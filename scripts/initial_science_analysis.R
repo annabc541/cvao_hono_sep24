@@ -80,16 +80,16 @@ spec_rad = left_join(spec_rad_to_fix,spec_rad_mean,by = "hour") %>%
   select(-c(jhono_avg,jhno3_avg,hour)) %>%
   arrange(date)
 
+cvao_merge_fixed_spec_rad = cvao_merge %>% 
+  select(-c(jhono,jhno3)) %>% 
+  left_join(spec_rad)
+
 cvao_merge_fixed_spec_rad %>% 
   filter(date > "2024-09-01" & date < "2024-09-30") %>% 
   pivot_longer(c(jhono,jhno3)) %>%
   ggplot(aes(date,value,col = name)) +
   geom_path() +
   facet_grid(rows = vars(name),scales = "free")
-
-cvao_merge_fixed_spec_rad = cvao_merge %>% 
-  select(-c(jhono,jhno3)) %>% 
-  left_join(spec_rad)
 
 # Merging data & timeseries plot ------------------------------------------------------------
 
