@@ -9,6 +9,8 @@ Sys.setenv(TZ = "UTC")
 #calibration values
 time_corr = 22.52 * 60
 conc_cal = 1000/100000 #standard conc / dilution factor
+liquid_flow1 = 5/26.55
+liquid_flow2 = 5/27.48
 
 # Functions ----------------------------------------------------------------
 
@@ -268,38 +270,40 @@ zeroed = zero_flag %>%
   mutate(ch1_zeroed = ifelse(date < "2024-09-16",ch1 - ch1_zeroes_inter1,ch1 - ch1_zeroes_inter2),
          ch2_zeroed = ifelse(date < "2024-09-16",ch2 - ch2_zeroes_inter1,ch2 - ch2_zeroes_inter2))
 
-zeroed %>%
-  rename(`HONO + interferences (ch1)` = ch1_zeroes,
-         `Interferences (ch2)` = ch2_zeroes) %>%
-  pivot_longer(c(`HONO + interferences (ch1)`,`Interferences (ch2)`)) %>%
-  ggplot(aes(date,value,col = name)) +
-  theme_bw() +
-  geom_point() +
-  labs(x = "Datetime (UTC)",
-       y = "Absorbance",
-       col = NULL) +
-  theme(legend.position = "top") +
-  # facet_grid(rows = vars(name),scales = "free") +
-  scale_x_datetime(breaks = "1 day",date_labels = "%d %b")
+# zeroed %>%
+#   rename(`HONO + interferences (ch1)` = ch1_zeroes,
+#          `Interferences (ch2)` = ch2_zeroes) %>%
+#   pivot_longer(c(`HONO + interferences (ch1)`,`Interferences (ch2)`)) %>%
+#   ggplot(aes(date,value,col = name)) +
+#   theme_bw() +
+#   geom_point() +
+#   labs(x = "Datetime (UTC)",
+#        y = "Absorbance",
+#        col = NULL) +
+#   theme(legend.position = "top") +
+#   # facet_grid(rows = vars(name),scales = "free") +
+#   scale_x_datetime(breaks = "1 day",date_labels = "%d %b")
+# 
+# zeroed %>%
+#   mutate(ch1_zeroed = ifelse(flag == 0,ch1_zeroed,NA_real_),
+#          ch2_zeroed = ifelse(flag == 0,ch2_zeroed,NA_real_),
+#          ch1 = ifelse(flag == 0,ch1,NA_real_),
+#          ch2 = ifelse(flag == 0,ch2,NA_real_)) %>%
+#   timeAverage("30 sec") %>%
+#   rename(`HONO + interferences (ch1)` = ch1_zeroed,
+#          `Interferences (ch2)` = ch2_zeroed) %>%
+#   pivot_longer(c(`HONO + interferences (ch1)`,`Interferences (ch2)`)) %>%
+#   ggplot(aes(date,value,col = name)) +
+#   theme_bw() +
+#   geom_path() +
+#   labs(x = "Datetime (UTC)",
+#        y = "Absorbance",
+#        col = NULL) +
+#   theme(legend.position = "top") +
+#   # facet_grid(rows = vars(name),scales = "free") +
+#   scale_x_datetime(breaks = "1 day",date_labels = "%d %b")
 
-zeroed %>%
-  mutate(ch1_zeroed = ifelse(flag == 0,ch1_zeroed,NA_real_),
-         ch2_zeroed = ifelse(flag == 0,ch2_zeroed,NA_real_),
-         ch1 = ifelse(flag == 0,ch1,NA_real_),
-         ch2 = ifelse(flag == 0,ch2,NA_real_)) %>%
-  timeAverage("30 sec") %>%
-  rename(`HONO + interferences (ch1)` = ch1_zeroed,
-         `Interferences (ch2)` = ch2_zeroed) %>%
-  pivot_longer(c(`HONO + interferences (ch1)`,`Interferences (ch2)`)) %>%
-  ggplot(aes(date,value,col = name)) +
-  theme_bw() +
-  geom_path() +
-  labs(x = "Datetime (UTC)",
-       y = "Absorbance",
-       col = NULL) +
-  theme(legend.position = "top") +
-  # facet_grid(rows = vars(name),scales = "free") +
-  scale_x_datetime(breaks = "1 day",date_labels = "%d %b")
+remove(zero_flag,zeroing,zeroes_grouped,zero_avg)
 
 # ggsave('ZA_zeroed_ch1_ch2.png',
 #        path = "output/analysis_plots",
@@ -308,9 +312,6 @@ zeroed %>%
 #        units = 'cm')
 
 # Calibration 0 -----------------------------------------------------------
-
-liquid_flow1 = 5/27.73 
-liquid_flow2 = 5/29.73
 
 cal = zeroed %>% 
   select(date,ch1_zeroed,ch2_zeroed) %>% 
@@ -355,9 +356,6 @@ dat0 = zeroed %>%
   select(-date1)
 
 # Calibration 1 -----------------------------------------------------------
-
-liquid_flow1 = 5/27.73 
-liquid_flow2 = 5/29.73
 
 cal = zeroed %>% 
   select(date,ch1_zeroed,ch2_zeroed) %>% 

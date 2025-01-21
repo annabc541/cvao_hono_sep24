@@ -31,10 +31,6 @@ gas_flow_dat %>%
   theme(text = element_text(size =  16),
         legend.position = "top")
 
-# test = gas_flow_dat %>% 
-  # mutate(hour = hour(date),
-  #        day = day(date))
-
 gas_flow_dat %>% 
   mutate(hour = hour(date),
          day = day(date)) %>% 
@@ -48,8 +44,26 @@ gas_flow_dat %>%
   # scale_x_continuous(breaks = c(7:18)) +
   theme(text = element_text(size =  16))
 
-ggsave('cvao_gas_flow_corr_hour_of_day.png',
-       path = "~/Writing/Thesis/Chapter 4 (HONO in CVAO)/Images/cheating",
+#checking if there's a relationship between gas flow and outside temperature
+cvao_merge = read.csv("~/Cape Verde/20240507_CV_merge.csv") %>% 
+  mutate(date = ymd_hms(date),
+         date = round_date(date,"1 hour")) %>% 
+  filter(date >= "2024-09-12 13:00" & date <= "2024-09-17 17:00") %>% 
+  select(date,temp = TEMP_10M_degC)
+
+gas_flow_dat %>% 
+  timeAverage("1 hour") %>% 
+  left_join(cvao_merge) %>% 
+  ggplot(aes(temp,gas_flow_corr)) +
+  theme_bw() +
+  geom_point(size = 2) +
+  labs(x = "Ambient temperature (Celsius)",
+       y = expression(Corrected~gas~flow~(mL~min^{-1}))) +
+  # geom_smooth(method = "lm") +
+  scale_colour_viridis_c()
+
+ggsave('cvao_gas_flow_corr_temp.png',
+       path = "output/analysis_plots/gas_flow",
        width = 15,
        height = 12,
        units = 'cm')
@@ -81,7 +95,7 @@ summary(model)
 slope_gas <- summary(model)$coefficients[2,1]
 
 
-# lab logging -------------------------------------------------------------
+# Lab logging -------------------------------------------------------------
 
 lab_flow = read.csv("data/lopap_gas_flow_lab_check.csv") %>% 
   mutate(date = ymd_hms(Time),
